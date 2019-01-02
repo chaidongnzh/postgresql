@@ -163,34 +163,52 @@ fi
 	fi
 
 #exec "$@"
-PGUSER="${PGUSER:-$POSTGRES_USER}" \
-	    pg_ctl -D "$PGDATA" -w start
 
 if [ "$NODE_TYPE" = 'standby' ]; then
+
+  if [ ! -f "~/exists" ];then
+    echo "rm data"
+    rm -rf "$PGDATA"/*
+
+    /usr/bin/repmgr -F -h $MASTER_IP -U repmgr -d repmgr -f /etc/repmgr.conf standby clone
+
+    touch ~/exists
+  fi
+
+  PGUSER="${PGUSER:-$POSTGRES_USER}" \
+	    pg_ctl -D "$PGDATA" -w start
+
   echo "repmgr register"
-  repmgr -f /etc/repmgr.conf standby register
+  /usr/bin/repmgr -F -f /etc/repmgr.conf standby register
+
   echo "repmgrd"
-  repmgrd --daemonize &
+  /usr/bin/repmgrd  --daemonize &
+
 else
+ 
+  PGUSER="${PGUSER:-$POSTGRES_USER}" \
+	    pg_ctl -D "$PGDATA" -w start
+
   echo "repmgr register"
 #  exec gosu postgres "$BASH_SOURCE" "repmgr -f /etc/repmgr.conf primary register"
-  /usr/bin/repmgr -f /etc/repmgr.conf primary register
+  /usr/bin/repmgr -F -f /etc/repmgr.conf primary register
   echo "repmgrd"
 #  exec gosu postgres "$BASH_SOURCE" "repmgrd --daemonize"
-  /usr/bin/repmgrd --daemonize &
+  /usr/bin/repmgrd  --daemonize &
 fi
 
 while sleep 60;do
-  echo "grep postgres"
-  ps aux|grep postgres|grep -q -v grep
-  POSTGRES_STATUS=$?
+#  echo "grep postgres"
+#  ps aux|grep postgres|grep -q -v grep
+#  POSTGRES_STATUS=$?
   
   echo "grep repmgrd"
   ps aux|grep repmgrd|grep -q -v grep
   REPMGRD_STATUS=$?
   
-  if [ $POSTGRES_STATUS -ne 0 -o $REPMGRD_STATUS -ne 0 ];then
-    echo "One of the processes has already exited."
+#  if [ $POSTGRES_STATUS -ne 0 -o $REPMGRD_STATUS -ne 0 ];then
+  if [ $REPMGRD_STATUS -ne 0 ];then
+    echo "processes repmgrd has already exited."
     exit 1
   fi
 done
