@@ -1,0 +1,2 @@
+REPMGRD_ENABLED=yes
+REPMGRD_CONF="/etc/repmgr.conf"
