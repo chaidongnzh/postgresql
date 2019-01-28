@@ -164,38 +164,36 @@ fi
 
 #exec "$@"
 
+if [ ! -f "$PGDATA/exists" ];then
 if [ "$NODE_TYPE" = 'standby' ]; then
 
-  if [ ! -f "~/exists" ];then
+  echo "standby"
+
     echo "rm data"
     rm -rf "$PGDATA"/*
 
     /usr/bin/repmgr -F -h $MASTER_IP -U repmgr -d repmgr -f /etc/repmgr.conf standby clone
 
-    touch ~/exists
-  fi
-
-  PGUSER="${PGUSER:-$POSTGRES_USER}" \
-	    pg_ctl -D "$PGDATA" -w start
-
   echo "repmgr register"
   /usr/bin/repmgr -F -f /etc/repmgr.conf standby register
-
-  echo "repmgrd"
-  /usr/bin/repmgrd  --daemonize &
+  touch $PGDATA/exists  
 
 else
  
-  PGUSER="${PGUSER:-$POSTGRES_USER}" \
-	    pg_ctl -D "$PGDATA" -w start
+  echo "primary"
 
-  echo "repmgr register"
 #  exec gosu postgres "$BASH_SOURCE" "repmgr -f /etc/repmgr.conf primary register"
+  echo "repmgr register"
   /usr/bin/repmgr -F -f /etc/repmgr.conf primary register
-  echo "repmgrd"
 #  exec gosu postgres "$BASH_SOURCE" "repmgrd --daemonize"
-  /usr/bin/repmgrd  --daemonize &
+  touch $PGDATA/exists
+
 fi
+fi
+
+PGUSER="${PGUSER:-$POSTGRES_USER}" \
+	    pg_ctl -D "$PGDATA" -w start
+/usr/bin/repmgrd  --daemonize &
 
 while sleep 60;do
 #  echo "grep postgres"
