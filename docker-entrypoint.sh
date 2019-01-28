@@ -175,6 +175,8 @@ if [ "$NODE_TYPE" = 'standby' ]; then
     /usr/bin/repmgr -F -h $MASTER_IP -U repmgr -d repmgr -f /etc/repmgr.conf standby clone
 
   echo "repmgr register"
+  PGUSER="${PGUSER:-$POSTGRES_USER}" \
+	    pg_ctl -D "$PGDATA" -w start
   /usr/bin/repmgr -F -f /etc/repmgr.conf standby register
   touch $PGDATA/exists  
 
@@ -184,15 +186,20 @@ else
 
 #  exec gosu postgres "$BASH_SOURCE" "repmgr -f /etc/repmgr.conf primary register"
   echo "repmgr register"
+  PGUSER="${PGUSER:-$POSTGRES_USER}" \
+	    pg_ctl -D "$PGDATA" -w start
   /usr/bin/repmgr -F -f /etc/repmgr.conf primary register
 #  exec gosu postgres "$BASH_SOURCE" "repmgrd --daemonize"
   touch $PGDATA/exists
 
 fi
-fi
+else
 
 PGUSER="${PGUSER:-$POSTGRES_USER}" \
 	    pg_ctl -D "$PGDATA" -w start
+
+fi
+
 /usr/bin/repmgrd  --daemonize &
 
 while sleep 60;do
