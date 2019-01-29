@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -Eeo pipefail
+set -xEeo pipefail
 # TODO swap to -Eeuo pipefail above (after handling all potentially-unset variables)
 
 # usage: file_env VAR [DEFAULT]
@@ -194,7 +194,6 @@ else
 
 fi
 else
-
 PGUSER="${PGUSER:-$POSTGRES_USER}" \
 	    pg_ctl -D "$PGDATA" -w start
 new_node=`repmgr -f /etc/repmgr.conf cluster show|grep  'is registered as standby but running as primary' |cut -d '"' -f 2`
