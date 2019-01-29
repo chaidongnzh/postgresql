@@ -198,11 +198,15 @@ else
 PGUSER="${PGUSER:-$POSTGRES_USER}" \
 	    pg_ctl -D "$PGDATA" -w start
 new_node=`repmgr -f /etc/repmgr.conf cluster show|grep  'is registered as standby but running as primary' |cut -d '"' -f 2`
+echo $new_node
 
 if [ $new_node ];then
- 	/usr/lib/postgresql/11/bin/pg_ctl -D "$PGDATA" -w stop
+        echo "rejoin"
+PGUSER="${PGUSER:-$POSTGRES_USER}" \
+ 	pg_ctl -D "$PGDATA" -w stop
  	repmgr node rejoin -f /etc/repmgr.conf -d 'host=devops03 dbname=repmgr user=repmgr' --force-rewind=/usr/lib/postgresql/11/bin/pg_rewind --verbose 
-        /usr/lib/postgresql/11/bin/pg_ctl -D "$PGDATA" -w start
+PGUSER="${PGUSER:-$POSTGRES_USER}" \
+            pg_ctl -D "$PGDATA" -w start
 fi
 
 fi
