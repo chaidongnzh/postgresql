@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -xEeo pipefail
+set -Ee
 # TODO swap to -Eeuo pipefail above (after handling all potentially-unset variables)
 
 # usage: file_env VAR [DEFAULT]
@@ -196,14 +196,17 @@ fi
 else
 PGUSER="${PGUSER:-$POSTGRES_USER}" \
 	    pg_ctl -D "$PGDATA" -w start
-new_node=`repmgr -f /etc/repmgr.conf cluster show|grep  'is registered as standby but running as primary' |cut -d '"' -f 2`
-echo $new_node
+new_node=`repmgr -q -f /etc/repmgr.conf cluster show|grep  'is registered as standby but running as primary' |cut -d '"' -f 2`
+conn=`grep 'conninfo' /etc/repmgr.conf|cut -d ' ' -f 2- |sed "s/'//g"`
+conninfo="repmgr node rejoin -f /etc/repmgr.conf -d 'host=$new_node $conn' --force-rewind=/usr/lib/postgresql/11/bin/pg_rewind --verbose"
+echo $conninfo
 
 if [ $new_node ];then
         echo "rejoin"
 PGUSER="${PGUSER:-$POSTGRES_USER}" \
  	pg_ctl -D "$PGDATA" -w stop
- 	repmgr node rejoin -f /etc/repmgr.conf -d 'host=devops03 dbname=repmgr user=repmgr' --force-rewind=/usr/lib/postgresql/11/bin/pg_rewind --verbose 
+eval $conninfo
+else
 PGUSER="${PGUSER:-$POSTGRES_USER}" \
             pg_ctl -D "$PGDATA" -w start
 fi
